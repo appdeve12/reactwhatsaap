@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Modal, Button, Form, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 
-const ManualImportModal = ({ show, handleClose, handleImport }) => {
+const ManualImportModal = ({ show, handleClose, handleImport, initialData = []  }) => {
   const session = useSelector(state => state.auth.sessions);
   const [campaignName, setCampaignName] = useState('');
   const [numbersText, setNumbersText] = useState('');
@@ -11,14 +11,22 @@ const ManualImportModal = ({ show, handleClose, handleImport }) => {
   const [totalCount, setTotalCount] = useState(0);
   const [duplicatesRemoved, setDuplicatesRemoved] = useState(null);
   const [verifiedCount, setVerifiedCount] = useState(0);
+const sanitizeNumbers = (rawNumbers) => {
+  return rawNumbers
+    .split(/[\n,]+/)
+    .map(num => num.replace(/\D/g, '')) // remove non-digits
+    .map(num => {
+      if (num.length === 10) {
+        return '91' + num; // append country code if only 10 digits
+      } else if (num.length === 12 && num.startsWith('91')) {
+        return num; // already has country code
+      } else {
+        return null; // invalid
+      }
+    })
+    .filter(Boolean); // remove nulls
+};
 
-  // 🔧 Sanitize numbers: Remove all non-digit characters and keep valid lengths
-  const sanitizeNumbers = (rawNumbers) => {
-    return rawNumbers
-      .split(/[\n,]+/)
-      .map(num => num.replace(/\D/g, '')) // remove non-digits
-      .filter(num => num.length >= 10);   // keep only 10 or more digits
-  };
 
   const getNumbersArray = () => {
     return sanitizeNumbers(numbersText);
@@ -58,7 +66,7 @@ const ManualImportModal = ({ show, handleClose, handleImport }) => {
       const batch = allNumbers.slice(i, i + batchSize);
 
       try {
-        const response = await axios.post('http://13.53.41.83/check', {
+        const response = await axios.post('http://13.49.243.216/check', {
           sessionNumber: sessionNumber,
           numbers: batch,
         });
@@ -102,7 +110,14 @@ const ManualImportModal = ({ show, handleClose, handleImport }) => {
     setVerifiedCount(0);
     setDuplicatesRemoved(null);
   };
-  
+  useEffect(() => {
+  if (initialData.length > 0) {
+    setCampaignName(initialData[0]?.name || '');
+    const initialNumbers = initialData.map(item => item.number).join('\n');
+    setNumbersText(initialNumbers);
+  }
+}, [initialData]);
+
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered>
       <Modal.Header closeButton>
@@ -184,7 +199,7 @@ const ManualImportModal = ({ show, handleClose, handleImport }) => {
         <Button
           variant="primary"
           onClick={processContacts}
-          disabled={verifiedCount === 0}
+       
         >
           Import
         </Button>

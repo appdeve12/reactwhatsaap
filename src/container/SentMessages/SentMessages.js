@@ -20,7 +20,7 @@ const SentMessages = () => {
     const fetchMessages = async () => {
       setLoading(true);
       try {
-        const res = await axios.get('http://13.53.41.83/whatsapp/all', {
+        const res = await axios.get('http://13.49.243.216/whatsapp/all', {
           headers: {
             Authorization: `Bearer ${token}`
           }

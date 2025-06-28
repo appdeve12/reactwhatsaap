@@ -78,41 +78,82 @@ const dispatch=useDispatch()
       docx: docxFile ? docxFile.url.split('/').pop() : ""
     };
   };
-
-  const handleSendNow = async () => {
-    const payload = preparePayload();
-    if (!payload) return;
-
-    setLoading(true);
+  const sendBatchWithRetry = async (batchPayload, retries = 3) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const res = await axios.post("http://13.53.41.83/whatsapp/send", payload, {
+      await axios.post("http://13.49.243.216/whatsapp/send", batchPayload, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-        }
+        },
       });
-
-      const formattedMessages = numbers.map((n, idx) => ({
-        id: n.number,
-        type: "Contact",
-        date: new Date().toISOString(),
-        status: "Sent",
-        message: messages[idx] ? messages[idx].text : ''
-      }));
-
-      setSentMessages(formattedMessages);
-      dispatch(storeMessage([]));
-      dispatch(storeFiles([]));
-      dispatch(storeWhatsappNumber([]));
-      setShowSendModal(true);
-      toast.success("Messages sent!");
-    } catch (error) {
-      console.error("Error sending messages:", error);
-      toast.error(error?.response?.data?.message || 'Failed to send messages.');
-    } finally {
-      setLoading(false);
+      return true; // Success
+    } catch (err) {
+      if (attempt === retries) throw err; // Last try failed
+      await new Promise(res => setTimeout(res, 1000)); // Wait 1 sec before retry
     }
-  };
+  }
+};
+
+
+const handleSendNow = async () => {
+  const payload = preparePayload();
+  if (!payload) return;
+
+  const BATCH_SIZE = 50;
+  const totalContacts = payload.to.length;
+  const batches = Math.ceil(totalContacts / BATCH_SIZE);
+  let allSentMessages = [];
+  let failedContacts = [];
+
+  setLoading(true);
+
+  try {
+    for (let i = 0; i < batches; i++) {
+      const start = i * BATCH_SIZE;
+      const end = start + BATCH_SIZE;
+
+      const batchPayload = {
+        ...payload,
+        to: payload.to.slice(start, end),
+        message: payload.message.slice(0, 1),
+      };
+
+      try {
+        await sendBatchWithRetry(batchPayload); // retry-safe function
+
+        const formattedMessages = batchPayload.to.map(number => ({
+          id: number,
+          type: "Contact",
+          date: new Date().toISOString(),
+          status: "Sent",
+          message: payload.message[0] || '',
+        }));
+        allSentMessages.push(...formattedMessages);
+      } catch (err) {
+        toast.error(`Batch ${i + 1} failed after retries.`);
+        failedContacts.push(...batchPayload.to);
+      }
+
+      await new Promise(res => setTimeout(res, 1000)); // Delay between batches
+    }
+
+    setSentMessages(allSentMessages);
+    dispatch(storeMessage([]));
+    dispatch(storeFiles([]));
+    dispatch(storeWhatsappNumber([]));
+    setShowSendModal(true);
+
+    if (failedContacts.length === 0) {
+      toast.success("✅ All messages sent successfully!");
+    } else {
+      toast.warn(`⚠️ Some contacts failed: ${failedContacts.length}`);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleScheduleSend = async () => {
     const payload = preparePayload();
@@ -121,7 +162,7 @@ const dispatch=useDispatch()
     payload.scheduledTime = new Date(scheduledDate).toISOString();
     setLoading(true);
     try {
-      const res = await axios.post("http://13.53.41.83/whatsapp/sendsc", payload, {
+      const res = await axios.post("http://13.49.243.216/whatsapp/sendsc", payload, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -146,7 +187,7 @@ const dispatch=useDispatch()
 
   return (
     <>
-    {loading ? <MyLoader/>: <>
+      {loading ? <MyLoader/>: <>
   <Header />
       <Container fluid className="bg-light" style={{ height: '92vh' }}>
         <Row className="h-100">

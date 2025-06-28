@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { storeSessions } from '../../redux/authSlice';
 
-const socket = io('http://13.53.41.83');
+const socket = io('http://13.49.243.216');
 
 const QRCodeLogin = () => {
   const reduxSessions = useSelector(state => state.auth.sessions);
@@ -29,7 +29,7 @@ const QRCodeLogin = () => {
 
   const startNewSession = async () => {
     try {
-      const res = await axios.post('http://13.53.41.83/start-session');
+      const res = await axios.post('http://13.49.243.216/start-session');
       const sessionId = res.data.sessionId;
 
       const newSession = {

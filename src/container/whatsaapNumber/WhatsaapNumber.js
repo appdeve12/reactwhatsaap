@@ -44,7 +44,7 @@ const verificationnumberregisterornot = async (contacts) => {
     const numbersOnly = batch.map(contact => contact.number);
  const sessionNumber = session[0]?.realNumber;
     try {
-      const response = await axios.post('http://13.53.41.83/check', {
+      const response = await axios.post('http://13.49.243.216/check', {
         sessionNumber: sessionNumber, // Update if dynamic
         numbers: numbersOnly,
       });
@@ -176,14 +176,23 @@ console.log("uniqueContacts",uniqueContacts )
     handleClose();
   };
 
+const handleManualImport = (importedContacts) => {
+  // Combine old and new numbers
+  const combined = [...numbers, ...importedContacts];
 
-  const handleManualImport = (importedContacts) => {
-    dispatch(storeWhatsappNumber(importedContacts));
-    setContacts(importedContacts);
+  // Create a map to remove duplicates based on `number`
+  const uniqueMap = new Map();
 
-    setShowManualImport(false);
-  };
+  combined.forEach(contact => {
+    uniqueMap.set(contact.number, contact); // overwrites duplicate numbers
+  });
 
+  const deduplicatedContacts = Array.from(uniqueMap.values());
+
+  dispatch(storeWhatsappNumber(deduplicatedContacts));
+  setContacts(deduplicatedContacts);
+  setShowManualImport(false);
+};
 
 
 
@@ -202,6 +211,20 @@ console.log("uniqueContacts",uniqueContacts )
 
         <Card.Header className="bg-success text-white d-flex justify-content-between align-items-center" style={{ padding: "0.5rem 1.5rem" }}>
           <strong>WhatsApp Number</strong>
+    <div>
+  {numbers.length > 0 && (
+    <Button
+      variant="outline-light"
+      size="sm"
+      onClick={() => {
+        setShowManualImport(true);
+      }}
+    >
+      Edit
+    </Button>
+  )}
+</div>
+
           <Dropdown onSelect={handleSelect} as={ButtonGroup}>
             <Dropdown.Toggle
               variant="success"
@@ -307,13 +330,15 @@ console.log("uniqueContacts",uniqueContacts )
 
 
       {showManualImport && (
-        <ManualImportModal
-          show={showManualImport}
-          handleClose={() => setShowManualImport(false)}
-          handleImport={handleManualImport}
-        
-        />
+       <ManualImportModal
+  show={showManualImport}
+  handleClose={() => setShowManualImport(false)}
+  handleImport={handleManualImport}
+  initialData={numbers}
+/>
+
       )}
+      
     </div>
   );
 };

@@ -57,15 +57,15 @@ const dispatch=useDispatch()
     const pdfFile = attachfiles.find(f => f.type === "Pdf");
     const docxFile = attachfiles.find(f => f.type === "Docx");
 
-    const MAX_CONTACTS = session.length * 400;
+    // const MAX_CONTACTS = session.length * 400;
     if (to.length === 0 && message.length === 0) {
       toast.error("Please add at least one number or message.");
       return null;
     }
-    if (to.length > MAX_CONTACTS) {
-      toast.error(`You can only send to max ${MAX_CONTACTS} contacts using ${session.length} sessions.`);
-      return null;
-    }
+    // if (to.length > MAX_CONTACTS) {
+    //   toast.error(`You can only send to max ${MAX_CONTACTS} contacts using ${session.length} sessions.`);
+    //   return null;
+    // }
 
     return {
       from: session.map(s => s.realNumber),

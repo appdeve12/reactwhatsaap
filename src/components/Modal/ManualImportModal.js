@@ -66,7 +66,7 @@ const sanitizeNumbers = (rawNumbers) => {
       const batch = allNumbers.slice(i, i + batchSize);
 
       try {
-        const response = await axios.post('http://13.49.243.216/check', {
+        const response = await axios.post('http://13.48.249.111/check', {
           sessionNumber: sessionNumber,
           numbers: batch,
         });

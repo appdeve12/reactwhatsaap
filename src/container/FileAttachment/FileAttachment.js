@@ -17,7 +17,7 @@ const FileAttachment = () => {
   const [showModal, setShowModal] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
 
-  const baseURL = "http://13.49.243.216";
+  const baseURL = "http://13.48.249.111";
 
   const getFullUrl = (url) => url?.startsWith('http') ? url : `${baseURL}${url}`;
 

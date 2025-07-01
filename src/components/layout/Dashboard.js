@@ -81,7 +81,7 @@ const dispatch=useDispatch()
   const sendBatchWithRetry = async (batchPayload, retries = 3) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      await axios.post("http://13.49.243.216/whatsapp/send", batchPayload, {
+      await axios.post("http://13.48.249.111/whatsapp/send", batchPayload, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -100,7 +100,7 @@ const handleSendNow = async () => {
   const payload = preparePayload();
   if (!payload) return;
 
-  const BATCH_SIZE = 50;
+  const BATCH_SIZE = 10;
   const totalContacts = payload.to.length;
   const batches = Math.ceil(totalContacts / BATCH_SIZE);
   let allSentMessages = [];
@@ -153,6 +153,93 @@ const handleSendNow = async () => {
     setLoading(false);
   }
 };
+// const preparePayload = () => {
+//   const to = numbers.map(n => {
+//     let num = n.number.toString().replace(/\D/g, '');
+//     if (num.startsWith('91') && num.length === 12) num = num.slice(2);
+//     else if (num.startsWith('0') && num.length === 11) num = num.slice(1);
+//     return `91${num}`;
+//   });
+
+//   const message = messages.map(m => m.text);
+//   const photo = attachfiles.filter(f => f.type === "Photos").map(f => f.url.split('/').pop());
+//   const videoFile = attachfiles.find(f => f.type === "Videos");
+//   const pdfFile = attachfiles.find(f => f.type === "Pdf");
+//   const docxFile = attachfiles.find(f => f.type === "Docx");
+
+//   if (to.length === 0 && message.length === 0) {
+//     toast.error("Please add at least one number or message.");
+//     return null;
+//   }
+
+//   return {
+//     from: session.map(s => s.realNumber),
+//     to,
+//     message,
+//     photo,
+//     video: videoFile ? videoFile.url.split('/').pop() : "",
+//     sendVideoAsSticker: true,
+//     pdf: pdfFile ? pdfFile.url.split('/').pop() : "",
+//     docx: docxFile ? docxFile.url.split('/').pop() : ""
+//   };
+// };
+
+// const sendMessages = async (payload) => {
+//   try {
+//     await axios.post("http://13.48.249.111/whatsapp/send", payload, {
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
+//     return true; // Success
+//   } catch (err) {
+//     throw err; // Error if it fails
+//   }
+// };
+
+// const handleSendNow = async () => {
+//   const payload = preparePayload();
+//   if (!payload) return;
+
+//   setLoading(true);
+//   setShowSendModal(true); // Show modal immediately
+
+//   // Stop loading quickly, don't wait for API
+//   setTimeout(() => {
+//     setLoading(false);
+//   }, 3000); // Stop loading in 3 seconds
+
+//   // Close modal in 2 minutes
+//   setTimeout(() => {
+//     setShowSendModal(false);
+//   }, 120000);
+
+//   try {
+//     // API call runs in the background
+//     const success = await sendMessages(payload);
+
+//     if (success) {
+//       const formattedMessages = payload.to.map(number => ({
+//         id: number,
+//         type: "Contact",
+//         date: new Date().toISOString(),
+//         status: "Sent",
+//         message: payload.message[0] || '',
+//       }));
+
+//       setSentMessages(formattedMessages);
+//       dispatch(storeMessage([]));
+//       dispatch(storeFiles([]));
+//       dispatch(storeWhatsappNumber([]));
+
+//       toast.success("✅ All messages sent successfully!");
+//     }
+//   } catch (err) {
+//     toast.error("⚠️ Failed to send messages.");
+//   }
+// };
+
 
 
   const handleScheduleSend = async () => {
@@ -162,7 +249,7 @@ const handleSendNow = async () => {
     payload.scheduledTime = new Date(scheduledDate).toISOString();
     setLoading(true);
     try {
-      const res = await axios.post("http://13.49.243.216/whatsapp/sendsc", payload, {
+      const res = await axios.post("http://13.48.249.111/whatsapp/sendsc", payload, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,

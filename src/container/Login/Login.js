@@ -29,7 +29,7 @@ const Login = () => {
     e.preventDefault();
     setloading(true);
     try {
-      const res = await axios.post('http://13.49.243.216/auth/login', formData);
+      const res = await axios.post('http://13.48.249.111/auth/login', formData);
       localStorage.setItem('token', res.data.token);
       dispatch(storetoken(res.data.token));
       dispatch(storeuserdata(res.data.user));

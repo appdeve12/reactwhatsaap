@@ -44,7 +44,7 @@ const verificationnumberregisterornot = async (contacts) => {
     const numbersOnly = batch.map(contact => contact.number);
  const sessionNumber = session[0]?.realNumber;
     try {
-      const response = await axios.post('http://13.49.243.216/check', {
+      const response = await axios.post('http://13.48.249.111/check', {
         sessionNumber: sessionNumber, // Update if dynamic
         numbers: numbersOnly,
       });

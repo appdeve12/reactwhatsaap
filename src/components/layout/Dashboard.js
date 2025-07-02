@@ -57,15 +57,11 @@ const dispatch=useDispatch()
     const pdfFile = attachfiles.find(f => f.type === "Pdf");
     const docxFile = attachfiles.find(f => f.type === "Docx");
 
-    // const MAX_CONTACTS = session.length * 400;
+
     if (to.length === 0 && message.length === 0) {
       toast.error("Please add at least one number or message.");
       return null;
     }
-    // if (to.length > MAX_CONTACTS) {
-    //   toast.error(`You can only send to max ${MAX_CONTACTS} contacts using ${session.length} sessions.`);
-    //   return null;
-    // }
 
     return {
       from: session.map(s => s.realNumber),
@@ -78,10 +74,10 @@ const dispatch=useDispatch()
       docx: docxFile ? docxFile.url.split('/').pop() : ""
     };
   };
-  const sendBatchWithRetry = async (batchPayload, retries = 3) => {
+const sendWithRetry = async (payload, retries = 3) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      await axios.post("http://13.48.249.111/whatsapp/send", batchPayload, {
+      await axios.post("http://localhost:4004/whatsapp/send", payload, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -95,47 +91,32 @@ const dispatch=useDispatch()
   }
 };
 
-
 const handleSendNow = async () => {
   const payload = preparePayload();
   if (!payload) return;
 
-  const BATCH_SIZE = 10;
-  const totalContacts = payload.to.length;
-  const batches = Math.ceil(totalContacts / BATCH_SIZE);
-  let allSentMessages = [];
-  let failedContacts = [];
+  const allSentMessages = [];
+  const failedContacts = [];
 
   setLoading(true);
 
   try {
-    for (let i = 0; i < batches; i++) {
-      const start = i * BATCH_SIZE;
-      const end = start + BATCH_SIZE;
+    // Send the entire payload in one API call
+    try {
+      await sendWithRetry(payload); // retry-safe function
 
-      const batchPayload = {
-        ...payload,
-        to: payload.to.slice(start, end),
-        message: payload.message.slice(0, 1),
-      };
+      const formattedMessages = payload.to.map(number => ({
+        id: number,
+        type: "Contact",
+        date: new Date().toISOString(),
+        status: "Sent",
+        message: payload.message[0] || '',
+      }));
+      allSentMessages.push(...formattedMessages);
 
-      try {
-        await sendBatchWithRetry(batchPayload); // retry-safe function
-
-        const formattedMessages = batchPayload.to.map(number => ({
-          id: number,
-          type: "Contact",
-          date: new Date().toISOString(),
-          status: "Sent",
-          message: payload.message[0] || '',
-        }));
-        allSentMessages.push(...formattedMessages);
-      } catch (err) {
-        toast.error(`Batch ${i + 1} failed after retries.`);
-        failedContacts.push(...batchPayload.to);
-      }
-
-      await new Promise(res => setTimeout(res, 1000)); // Delay between batches
+    } catch (err) {
+      toast.error(`Failed to send messages after retries.`);
+      failedContacts.push(...payload.to);
     }
 
     setSentMessages(allSentMessages);
@@ -153,6 +134,7 @@ const handleSendNow = async () => {
     setLoading(false);
   }
 };
+
 // const preparePayload = () => {
 //   const to = numbers.map(n => {
 //     let num = n.number.toString().replace(/\D/g, '');
@@ -186,7 +168,7 @@ const handleSendNow = async () => {
 
 // const sendMessages = async (payload) => {
 //   try {
-//     await axios.post("http://13.48.249.111/whatsapp/send", payload, {
+//     await axios.post("http://localhost:4004/whatsapp/send", payload, {
 //       headers: {
 //         "Content-Type": "application/json",
 //         Authorization: `Bearer ${token}`,
@@ -249,7 +231,7 @@ const handleSendNow = async () => {
     payload.scheduledTime = new Date(scheduledDate).toISOString();
     setLoading(true);
     try {
-      const res = await axios.post("http://13.48.249.111/whatsapp/sendsc", payload, {
+      const res = await axios.post("http://localhost:4004/whatsapp/sendsc", payload, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,

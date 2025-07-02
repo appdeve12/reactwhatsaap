@@ -44,7 +44,7 @@ const verificationnumberregisterornot = async (contacts) => {
     const numbersOnly = batch.map(contact => contact.number);
  const sessionNumber = session[0]?.realNumber;
     try {
-      const response = await axios.post('http://13.48.249.111/check', {
+      const response = await axios.post('http://localhost:4004/check', {
         sessionNumber: sessionNumber, // Update if dynamic
         numbers: numbersOnly,
       });
@@ -175,16 +175,19 @@ console.log("uniqueContacts",uniqueContacts )
 
     handleClose();
   };
-
 const handleManualImport = (importedContacts) => {
-  // Combine old and new numbers
-  const combined = [...numbers, ...importedContacts];
+  const campaignName = importedContacts[0]?.name;
 
-  // Create a map to remove duplicates based on `number`
+  // 1. Filter out any existing contacts for the same campaign
+  const filteredOld = numbers.filter(contact => contact.name !== campaignName);
+
+  // 2. Combine filtered old + new imported ones
+  const combined = [...filteredOld, ...importedContacts];
+
+  // 3. Remove duplicates based on number
   const uniqueMap = new Map();
-
   combined.forEach(contact => {
-    uniqueMap.set(contact.number, contact); // overwrites duplicate numbers
+    uniqueMap.set(contact.number, contact); // overwrite duplicates
   });
 
   const deduplicatedContacts = Array.from(uniqueMap.values());
@@ -193,6 +196,7 @@ const handleManualImport = (importedContacts) => {
   setContacts(deduplicatedContacts);
   setShowManualImport(false);
 };
+
 
 
 

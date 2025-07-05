@@ -43,12 +43,12 @@ const Dashboard = () => {
   const [sentMessages, setSentMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-useEffect(() => {
-  if (!showAllSendModal && triggerShowSendModal) {
-    setShowSendModal(true);          // Open Send Modal only when AllSendModal is closed
-    setTriggerShowSendModal(false);  // Reset trigger
-  }
-}, [showAllSendModal, triggerShowSendModal]);
+  useEffect(() => {
+    if (!showAllSendModal && triggerShowSendModal) {
+      setShowSendModal(true);          // Open Send Modal only when AllSendModal is closed
+      setTriggerShowSendModal(false);  // Reset trigger
+    }
+  }, [showAllSendModal, triggerShowSendModal]);
 
   const preparePayload = () => {
     const to = numbers.map(n => {
@@ -84,76 +84,80 @@ useEffect(() => {
   const sendWithRetry = async (payload, retries = 3) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        await axios.post("http://localhost:4004/whatsapp/send", payload, {
+        const response = await axios.post("http://localhost:4004/whatsapp/send", payload, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         });
-        return true; // Success
+        return response.data;  // Return actual API data here
       } catch (err) {
-        if (attempt === retries) throw err; // Last try failed
-        await new Promise(res => setTimeout(res, 1000)); // Wait 1 sec before retry
+        if (attempt === retries) throw err; // Last try failed, throw error
+        await new Promise(res => setTimeout(res, 1000)); // Wait before retrying
       }
     }
   };
-const handleSendNow = async () => {
-  const payload = preparePayload();
-  if (!payload) return;
 
-  const allSentMessages = [];
-  const failedContacts = [];
+  const handleSendNow = async () => {
+    const payload = preparePayload();
+    if (!payload) return;
 
-  setLoading(true);
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-  setLoading(false);
+    const allSentMessages = [];
+    const failedContacts = [];
 
-  setShowAllSendModal(true); // Show confirmation first
+    setLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setLoading(false);
 
-  try {
+    setShowAllSendModal(true); // Show confirmation first
+
     try {
-      await sendWithRetry(payload);
+      try {
+        const apiResponse = await sendWithRetry(payload);
 
-      const formattedMessages = payload.to.map(number => ({
-        id: number,
-        type: "Contact",
-        date: new Date().toISOString(),
-        status: "Sent",
-        message: payload.message[0] || '',
-      }));
+        console.log("API Response:", apiResponse);
 
-      allSentMessages.push(...formattedMessages);
-      setSentMessages(allSentMessages);
+        if (apiResponse && apiResponse.status === "sent") {
+          const formattedMessages = apiResponse.results.map((msg) => ({
+            id: msg.to,
+            type: msg.type,
+            date: new Date().toISOString(),
+            status: msg.status,
+            message: msg.message,
+          }));
+
+          setSentMessages(formattedMessages);
+
+          dispatch(storeMessage([]));
+          dispatch(storeFiles([]));
+          dispatch(storeWhatsappNumber([]));
+
+          // 👇 Instead of directly calling setShowSendModal(true)
+          setTriggerShowSendModal(true); // trigger to open it after modal closes
+
+        }
+      } catch (err) {
+        toast.error("Failed to send messages after retries.");
+        failedContacts.push(...payload.to);
+
+        setShowAllSendModal(false);  // close confirmation modal
+        setTriggerShowSendModal(false);
+        setShowSendModal(false);
+      }
+
+      if (failedContacts.length === 0) {
+        toast.success("✅ All messages sent successfully!");
+      } else {
+        toast.warn(`⚠️ Some contacts failed: ${failedContacts.length}`);
+      }
+
+    } finally {
 
       dispatch(storeMessage([]));
       dispatch(storeFiles([]));
       dispatch(storeWhatsappNumber([]));
-
-      // 👇 Instead of directly calling setShowSendModal(true)
-      setTriggerShowSendModal(true); // trigger to open it after modal closes
-
-    } catch (err) {
-      toast.error("Failed to send messages after retries.");
-      failedContacts.push(...payload.to);
-
-      setShowAllSendModal(false);  // close confirmation modal
-      setTriggerShowSendModal(false);
-      setShowSendModal(false);
     }
-
-    if (failedContacts.length === 0) {
-      toast.success("✅ All messages sent successfully!");
-    } else {
-      toast.warn(`⚠️ Some contacts failed: ${failedContacts.length}`);
-    }
-
-  } finally {
-    setSentMessages(allSentMessages);
-    dispatch(storeMessage([]));
-    dispatch(storeFiles([]));
-    dispatch(storeWhatsappNumber([]));
-  }
-};
+  };
 
 
   // const preparePayload = () => {
